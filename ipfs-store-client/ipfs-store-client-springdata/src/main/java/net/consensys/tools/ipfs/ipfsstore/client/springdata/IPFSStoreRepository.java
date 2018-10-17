@@ -12,8 +12,17 @@ import org.springframework.data.repository.PagingAndSortingRepository;
  * @param <ID> Entity ID type
  * @author Gregoire Jeanmart <gregoire.jeanmart@consensys.net>
  */
-public interface IPFSStoreRepository<E, I extends Serializable> extends PagingAndSortingRepository<E, I>, IPFSStoreCustomRepository<E, I> {
+public interface IPFSStoreRepository<E, ID extends Serializable> extends PagingAndSortingRepository<E, ID>, IPFSStoreCustomRepository<E, ID> {
 
+    /**
+     * Default Page No
+     */
+    int DEFAULT_PAGE_NO = 0;
+
+    /**
+     * Default Page Size
+     */
+    int DEFAULT_PAGE_SIZE = 20;
 
     /**
      * Save a document with external indexes

@@ -114,7 +114,7 @@ public class IPFSStoreClientShell {
         if (!input.equals(NULL)) {
 
             try (InputStream is = new FileInputStream(input)) {
-                return client.index(is, parseArgument(index), parseArgument(id), parseArgument(contentType), fields).toString();
+                return client.index(is, parseArgument(index), parseArgument(id), parseArgument(contentType), fields);
             } catch (IOException | IPFSStoreException e) {
                 throw new ClientShellException("Invalid --input: " + input, e);
             }
@@ -122,7 +122,7 @@ public class IPFSStoreClientShell {
             // Index
         } else {
             try {
-                return client.index(index, hash, id, contentType, fields).toString();
+                return client.index(index, hash, id, contentType, fields);
             } catch (IPFSStoreException e) {
                 throw new ClientShellException("Exception indexing IPFS hash: " + hash, e);
             }

@@ -15,11 +15,9 @@ import org.springframework.data.domain.Sort;
 
 import net.consensys.tools.ipfs.ipfsstore.client.java.IPFSStore;
 import net.consensys.tools.ipfs.ipfsstore.client.java.exception.IPFSStoreException;
-import net.consensys.tools.ipfs.ipfsstore.client.java.model.IdAndHash;
-import net.consensys.tools.ipfs.ipfsstore.client.java.model.MetadataAndPayload;
 import net.consensys.tools.ipfs.ipfsstore.client.springdata.IPFSStoreRepository;
 
-public class IPFSStoreRepositoryImpl<E, I extends Serializable> extends IPFSStoreCustomRepositoryImpl<E, I> implements IPFSStoreRepository<E, I> {
+public class IPFSStoreRepositoryImpl<E, ID extends Serializable> extends IPFSStoreCustomRepositoryImpl<E, ID> implements IPFSStoreRepository<E, ID> {
     private static final Logger LOGGER = LoggerFactory.getLogger(IPFSStoreRepositoryImpl.class);
 
     @Autowired
@@ -44,20 +42,14 @@ public class IPFSStoreRepositoryImpl<E, I extends Serializable> extends IPFSStor
 
 
             // Identifier
-            String id = null;
-            try {
-                id = this.getId(entity);
-                if (id == null) {
-                    id = generateID();
-                    this.setId(entity, id);
-                }
-                
-            } catch (NoSuchMethodException e) {
-                LOGGER.warn("No method getId() in the entity");
+            String id = this.getId(entity);
+            if (id == null) {
+                id = generateID();
+                this.setId(entity, id);
             }
 
             // Store and index the entity into IPFS+ElasticSearch through ipfs-store service
-            IdAndHash idAndHash = this.client.index(
+            String hash = this.client.index(
                     serialize(entity),
                     indexName,
                     id,
@@ -66,17 +58,15 @@ public class IPFSStoreRepositoryImpl<E, I extends Serializable> extends IPFSStor
 
 
             // Add the hash to the entity
-            try {
-                this.setHash(entity, idAndHash.getHash());
-            } catch (NoSuchMethodException e) {
-                LOGGER.warn("No method setHash(hash) in the entity");
-            }
+            this.setHash(entity, hash);
 
-            LOGGER.debug("Entity [entity: {}, external_index_fields: {}] saved. hash={}", entity, externalIndexFields, idAndHash.getHash());
+            LOGGER.debug("Entity [entity: {}, external_index_fields: {}] saved. hash={}", entity, externalIndexFields, hash);
 
             return entity;
 
         } catch (IPFSStoreException |
+                NoSuchMethodException |
+                SecurityException |
                 IllegalAccessException |
                 IllegalArgumentException |
                 InvocationTargetException e) {
@@ -86,17 +76,17 @@ public class IPFSStoreRepositoryImpl<E, I extends Serializable> extends IPFSStor
     }
 
     @Override
-    public E findOne(I id) {
+    public E findOne(ID id) {
         try {
             LOGGER.debug("Retrieve entity [id={}]", id);
 
-            MetadataAndPayload result = this.client.getById(indexName, id.toString());
+            byte[] content = this.client.getById(indexName, id.toString());
 
-            if (result == null || result.getPayload() == null || result.getPayload().length == 0) {
+            if (content == null || content.length == 0) {
                 return null;
             }
 
-            E entity = deserialize(result.getPayload(), result.getMetadata().getHash());
+            E entity = deserialize(content);
 
             LOGGER.debug("Entity [id={}] retrieved. entity={}", id, entity);
 
@@ -168,7 +158,7 @@ public class IPFSStoreRepositoryImpl<E, I extends Serializable> extends IPFSStor
     }
 
     @Override
-    public Iterable<E> findAll(Iterable<I> ids) {
+    public Iterable<E> findAll(Iterable<ID> ids) {
         throw new UnsupportedOperationException();
     }
 

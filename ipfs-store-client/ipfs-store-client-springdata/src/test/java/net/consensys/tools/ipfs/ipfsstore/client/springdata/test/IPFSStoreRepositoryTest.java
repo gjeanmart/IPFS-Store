@@ -35,10 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.consensys.tools.ipfs.ipfsstore.client.java.IPFSStore;
 import net.consensys.tools.ipfs.ipfsstore.client.java.exception.IPFSStoreException;
-import net.consensys.tools.ipfs.ipfsstore.client.java.model.IdAndHash;
-import net.consensys.tools.ipfs.ipfsstore.client.java.model.MetadataAndPayload;
 import net.consensys.tools.ipfs.ipfsstore.client.springdata.IPFSStoreRepository;
-import net.consensys.tools.ipfs.ipfsstore.client.springdata.impl.IPFSStoreCustomRepositoryImpl;
 import net.consensys.tools.ipfs.ipfsstore.client.springdata.test.sample.Entity;
 import net.consensys.tools.ipfs.ipfsstore.client.springdata.test.sample.Factory;
 import net.consensys.tools.ipfs.ipfsstore.client.springdata.test.sample.TestRepository;
@@ -81,9 +78,8 @@ public class IPFSStoreRepositoryTest {
     public void save() throws Exception {
         Entity entity = Factory.getEntity();
         String hash = "ABC";
-        String id = "sdfsdfsdf";
 
-        Mockito.when(client.index(any(InputStream.class), eq(index), anyString(), eq(CONTENT_TYPE), any(Map.class))).thenReturn(IdAndHash.builder().id(id).hash(hash).build());
+        Mockito.when(client.index(any(InputStream.class), eq(index), anyString(), eq(CONTENT_TYPE), any(Map.class))).thenReturn(hash);
 
         // #################################################
         Entity entitySaved = underTest.save(entity);
@@ -104,7 +100,7 @@ public class IPFSStoreRepositoryTest {
         Entity entity = Factory.getEntity(id);
         String hash = "ABC";
 
-        Mockito.when(client.index(any(InputStream.class), eq(index), eq(id), eq(CONTENT_TYPE), any(Map.class))).thenReturn(IdAndHash.builder().id(id).hash(hash).build());
+        Mockito.when(client.index(any(InputStream.class), eq(index), eq(id), eq(CONTENT_TYPE), any(Map.class))).thenReturn(hash);
 
         // #################################################
         Entity entitySaved = underTest.save(entity);
@@ -153,11 +149,9 @@ public class IPFSStoreRepositoryTest {
 
     @Test
     public void findOne() throws Exception {
-        String hash = "hash";
-        Metadata metadata = new Metadata(index, Factory.ID, hash, null, null);
         Entity entity = Factory.getEntity(Factory.ID);
 
-        Mockito.when(client.getById(eq(index), eq(Factory.ID))).thenReturn(MetadataAndPayload.builder().metadata(metadata).payload(MAPPER.writeValueAsBytes(entity)).build());
+        Mockito.when(client.getById(eq(index), eq(Factory.ID))).thenReturn(MAPPER.writeValueAsBytes(entity));
 
         // #################################################
         Entity entityFetched = underTest.findOne(Factory.ID);
@@ -188,20 +182,18 @@ public class IPFSStoreRepositoryTest {
 
     @Test
     public void findAll() throws Exception {
-        String hash = "hash";
         int total = 50;
-        Pageable pagination = new PageRequest(IPFSStoreCustomRepositoryImpl.DEFAULT_PAGE_NO, IPFSStoreCustomRepositoryImpl.DEFAULT_PAGE_SIZE);
+        Pageable pagination = new PageRequest(IPFSStoreRepository.DEFAULT_PAGE_NO, IPFSStoreRepository.DEFAULT_PAGE_SIZE);
         Page<Entity> page = Factory.getEntities(total, pagination);
 
-        List<MetadataAndPayload> contentList = page.getContent().stream().map(e -> {
+        List<byte[]> contentList = page.getContent().stream().map(e -> {
             try {
-                Metadata m = new Metadata(index, Factory.ID, hash, null, null);
-                return MetadataAndPayload.builder().metadata(m).payload(MAPPER.writeValueAsBytes(e)).build();
+                return MAPPER.writeValueAsBytes(e);
             } catch (JsonProcessingException e1) {
                 return null;
             }
         }).collect(Collectors.toList());
-        Page<MetadataAndPayload> content = new PageImpl<>(contentList, pagination, total);
+        Page<byte[]> content = new PageImpl<>(contentList, pagination, total);
         Mockito.when(client.searchAndFetch(eq(index), eq(null), eq(pagination))).thenReturn(content);
 
         // #################################################
@@ -210,29 +202,27 @@ public class IPFSStoreRepositoryTest {
 
         LOGGER.debug(result.toString());
 
-        assertEquals("Result should contain " + IPFSStoreCustomRepositoryImpl.DEFAULT_PAGE_SIZE + " elements", IPFSStoreCustomRepositoryImpl.DEFAULT_PAGE_SIZE, result.getContent().size());
+        assertEquals("Result should contain " + IPFSStoreRepository.DEFAULT_PAGE_SIZE + " elements", IPFSStoreRepository.DEFAULT_PAGE_SIZE, result.getContent().size());
         assertEquals("Result should have a total of " + total + " elements", total, result.getTotalElements());
-        assertEquals("Result should have be on page no " + IPFSStoreCustomRepositoryImpl.DEFAULT_PAGE_NO, IPFSStoreCustomRepositoryImpl.DEFAULT_PAGE_NO, result.getNumber());
+        assertEquals("Result should have be on page no " + IPFSStoreRepository.DEFAULT_PAGE_NO, IPFSStoreRepository.DEFAULT_PAGE_NO, result.getNumber());
 
         Mockito.verify(client, Mockito.times(1)).searchAndFetch(eq(index), eq(null), eq(pagination));
     }
 
     @Test
     public void findAllWithPagination() throws Exception {
-        String hash = "h";
         int total = 10;
         Pageable pagination = new PageRequest(0, 5);
         Page<Entity> page = Factory.getEntities(total, pagination);
 
-        List<MetadataAndPayload> contentList = page.getContent().stream().map(e -> {
+        List<byte[]> contentList = page.getContent().stream().map(e -> {
             try {
-                Metadata m = new Metadata(index, Factory.ID, hash, null, null);
-                return MetadataAndPayload.builder().metadata(m).payload(MAPPER.writeValueAsBytes(e)).build();
+                return MAPPER.writeValueAsBytes(e);
             } catch (JsonProcessingException e1) {
                 return null;
             }
         }).collect(Collectors.toList());
-        Page<MetadataAndPayload> content = new PageImpl<>(contentList, pagination, total);
+        Page<byte[]> content = new PageImpl<>(contentList, pagination, total);
         Mockito.when(client.searchAndFetch(eq(index), eq(null), eq(pagination))).thenReturn(content);
 
         // #################################################
@@ -250,21 +240,19 @@ public class IPFSStoreRepositoryTest {
 
     @Test
     public void findAllWithSort() throws Exception {
-        String hash = "h";
         int total = 50;
         Sort sort = new Sort(Direction.ASC, "id");
-        Pageable pagination = new PageRequest(IPFSStoreCustomRepositoryImpl.DEFAULT_PAGE_NO, IPFSStoreCustomRepositoryImpl.DEFAULT_PAGE_SIZE, sort);
+        Pageable pagination = new PageRequest(IPFSStoreRepository.DEFAULT_PAGE_NO, IPFSStoreRepository.DEFAULT_PAGE_SIZE, sort);
         Page<Entity> page = Factory.getEntities(total, pagination);
 
-        List<MetadataAndPayload> contentList = page.getContent().stream().map(e -> {
+        List<byte[]> contentList = page.getContent().stream().map(e -> {
             try {
-                Metadata m = new Metadata(index, Factory.ID, hash, null, null);
-                return MetadataAndPayload.builder().metadata(m).payload(MAPPER.writeValueAsBytes(e)).build();
+                return MAPPER.writeValueAsBytes(e);
             } catch (JsonProcessingException e1) {
                 return null;
             }
         }).collect(Collectors.toList());
-        Page<MetadataAndPayload> content = new PageImpl<>(contentList, pagination, total);
+        Page<byte[]> content = new PageImpl<>(contentList, pagination, total);
         Mockito.when(client.searchAndFetch(eq(index), eq(null), eq(pagination))).thenReturn(content);
 
         // #################################################
@@ -273,9 +261,9 @@ public class IPFSStoreRepositoryTest {
 
         LOGGER.debug(result.toString());
 
-        assertEquals("Result should contain " + IPFSStoreCustomRepositoryImpl.DEFAULT_PAGE_SIZE + " elements", IPFSStoreCustomRepositoryImpl.DEFAULT_PAGE_SIZE, result.getContent().size());
+        assertEquals("Result should contain " + IPFSStoreRepository.DEFAULT_PAGE_SIZE + " elements", IPFSStoreRepository.DEFAULT_PAGE_SIZE, result.getContent().size());
         assertEquals("Result should have a total of " + total + " elements", total, result.getTotalElements());
-        assertEquals("Result should have be on page no " + IPFSStoreCustomRepositoryImpl.DEFAULT_PAGE_NO, IPFSStoreCustomRepositoryImpl.DEFAULT_PAGE_NO, result.getNumber());
+        assertEquals("Result should have be on page no " + IPFSStoreRepository.DEFAULT_PAGE_NO, IPFSStoreRepository.DEFAULT_PAGE_NO, result.getNumber());
 
 
         Mockito.verify(client, Mockito.times(1)).searchAndFetch(eq(index), eq(null), eq(pagination));
@@ -400,20 +388,18 @@ public class IPFSStoreRepositoryTest {
 
     @Test
     public void findByfullTextSearch() throws Exception {
-        String hash = "h";
         int total = 10;
         Pageable pagination = new PageRequest(0, 5);
         Page<Entity> page = Factory.getEntities(total, pagination);
 
-        List<MetadataAndPayload> contentList = page.getContent().stream().map(e -> {
+        List<byte[]> contentList = page.getContent().stream().map(e -> {
             try {
-                Metadata m = new Metadata(index, Factory.ID, hash, null, null);
-                return MetadataAndPayload.builder().metadata(m).payload(MAPPER.writeValueAsBytes(e)).build();
+                return MAPPER.writeValueAsBytes(e);
             } catch (JsonProcessingException e1) {
                 return null;
             }
         }).collect(Collectors.toList());
-        Page<MetadataAndPayload> content = new PageImpl<>(contentList, pagination, total);
+        Page<byte[]> content = new PageImpl<>(contentList, pagination, total);
         Mockito.when(client.searchAndFetch(eq(index), any(Query.class), eq(pagination))).thenReturn(content);
 
         // #################################################

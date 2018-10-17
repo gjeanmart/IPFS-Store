@@ -1,6 +1,7 @@
 package net.consensys.tools.ipfs.ipfsstore.client.java;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -19,13 +20,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 
 import net.consensys.tools.ipfs.ipfsstore.client.java.exception.IPFSStoreException;
-import net.consensys.tools.ipfs.ipfsstore.client.java.model.IdAndHash;
-import net.consensys.tools.ipfs.ipfsstore.client.java.model.MetadataAndPayload;
 import net.consensys.tools.ipfs.ipfsstore.client.java.wrapper.IPFSStoreWrapper;
 import net.consensys.tools.ipfs.ipfsstore.client.java.wrapper.impl.RestIPFSStoreWrapperImpl;
 import net.consensys.tools.ipfs.ipfsstore.dto.IndexField;
 import net.consensys.tools.ipfs.ipfsstore.dto.IndexerRequest;
-import net.consensys.tools.ipfs.ipfsstore.dto.IndexerResponse;
 import net.consensys.tools.ipfs.ipfsstore.dto.Metadata;
 import net.consensys.tools.ipfs.ipfsstore.dto.query.Query;
 
@@ -79,12 +77,12 @@ public class IPFSStore {
      */
     public String store(String filePath) throws IPFSStoreException {
 
-        try(FileInputStream input = new FileInputStream(filePath)) {
-            return this.store(input);
+        try {
+            return this.store(new FileInputStream(filePath));
 
-        } catch (IOException e) {
+        } catch (FileNotFoundException e) {
             throw new IPFSStoreException(e);
-        } 
+        }
     }
 
     /**
@@ -109,10 +107,10 @@ public class IPFSStore {
      *
      * @param indexName Index name
      * @param hash      IPFS hash
-     * @return IdAndHash  Unique Identifier of the content in the index and IPFS Hash
+     * @return Generated unique identifier
      * @throws IPFSStoreException
      */
-    public IdAndHash index(String indexName, String hash) throws IPFSStoreException {
+    public String index(String indexName, String hash) throws IPFSStoreException {
         return this.index(indexName, hash, null);
     }
 
@@ -126,7 +124,7 @@ public class IPFSStore {
      * @return Unique Identifier of the content in the index
      * @throws IPFSStoreException
      */
-    public IdAndHash index(String indexName, String hash, String id) throws IPFSStoreException {
+    public String index(String indexName, String hash, String id) throws IPFSStoreException {
         return this.index(indexName, hash, id, null);
     }
 
@@ -139,10 +137,10 @@ public class IPFSStore {
      * @param hash        IPFS hash
      * @param id          Unique identifier of the content in the index
      * @param contentType Content Type (MIMETYPE)
-     * @return IdAndHash  Unique Identifier of the content in the index and IPFS Hash
+     * @return Unique Identifier of the content in the index
      * @throws IPFSStoreException
      */
-    public IdAndHash index(String indexName, String hash, String id, String contentType) throws IPFSStoreException {
+    public String index(String indexName, String hash, String id, String contentType) throws IPFSStoreException {
         return this.index(indexName, hash, id, contentType, new ArrayList<>());
     }
 
@@ -156,10 +154,10 @@ public class IPFSStore {
      * @param id          Unique identifier of the content in the index
      * @param contentType Content Type (MIMETYPE)
      * @param indexFields Attributes (key/value) to attach to the index document for the given hash and ID
-     * @return IdAndHash  Unique Identifier of the content in the index and IPFS Hash
+     * @return Unique Identifier of the content in the index
      * @throws IPFSStoreException
      */
-    public IdAndHash index(String indexName, String hash, String id, String contentType, Map<String, Object> indexFields)
+    public String index(String indexName, String hash, String id, String contentType, Map<String, Object> indexFields)
             throws IPFSStoreException {
 
         return this.index(indexName, hash, id, contentType, convert(indexFields));
@@ -175,15 +173,14 @@ public class IPFSStore {
      * @param id          Unique identifier of the content in the index
      * @param contentType Content Type (MIMETYPE)
      * @param indexFields Attributes (key/value) to attach to the index document for the given hash and ID
-     * @return IdAndHash  Unique Identifier of the content in the index and IPFS Hash
+     * @return Unique Identifier of the content in the index
      * @throws IPFSStoreException
      */
-    public IdAndHash index(String indexName, String hash, String id, String contentType, List<IndexField> indexFields)
+    public String index(String indexName, String hash, String id, String contentType, List<IndexField> indexFields)
             throws IPFSStoreException {
 
-        IndexerResponse response = this.wrapper.index(createRequest(indexName, hash, id, contentType, indexFields));
-        
-        return IdAndHash.builder().hash(hash).id(response.getDocumentId()).build();
+        return this.wrapper.index(createRequest(indexName, hash, id, contentType, indexFields)).
+                getDocumentId();
     }
 
     /**
@@ -195,7 +192,7 @@ public class IPFSStore {
      * @return Unique Identifier of the content in the index
      * @throws IPFSStoreException
      */
-    public IdAndHash index(InputStream file, String indexName) throws IPFSStoreException {
+    public String index(InputStream file, String indexName) throws IPFSStoreException {
         return this.index(file, indexName, null);
     }
 
@@ -209,7 +206,7 @@ public class IPFSStore {
      * @return Unique Identifier of the content in the index
      * @throws IPFSStoreException
      */
-    public IdAndHash index(InputStream file, String indexName, String id) throws IPFSStoreException {
+    public String index(InputStream file, String indexName, String id) throws IPFSStoreException {
         return this.index(file, indexName, id, null);
     }
 
@@ -224,7 +221,7 @@ public class IPFSStore {
      * @return Unique Identifier of the content in the index
      * @throws IPFSStoreException
      */
-    public IdAndHash index(InputStream file, String indexName, String id, String contentType) throws IPFSStoreException {
+    public String index(InputStream file, String indexName, String id, String contentType) throws IPFSStoreException {
         return this.index(file, indexName, id, contentType, new ArrayList<>());
     }
 
@@ -241,7 +238,7 @@ public class IPFSStore {
      * @return Unique Identifier of the content in the index
      * @throws IPFSStoreException
      */
-    public IdAndHash index(InputStream file, String indexName, String id, String contentType,
+    public String index(InputStream file, String indexName, String id, String contentType,
                         Map<String, Object> indexFields) throws IPFSStoreException {
         return this.index(file, indexName, id, contentType, convert(indexFields));
     }
@@ -258,16 +255,14 @@ public class IPFSStore {
      * @return Unique Identifier of the content in the index
      * @throws IPFSStoreException
      */
-    public IdAndHash index(InputStream file, String indexName, String id, String contentType,
+    public String index(InputStream file, String indexName, String id, String contentType,
                         List<IndexField> indexFields) throws IPFSStoreException {
 
         try {
-            IndexerResponse response = this.wrapper.storeAndIndex(
+            return this.wrapper.storeAndIndex(
                     IOUtils.toByteArray(file),
                     createRequest(indexName, null, id, contentType, indexFields)
-            );
-            
-            return IdAndHash.builder().id(response.getDocumentId()).hash(response.getHash()).build();
+            ).getDocumentId();
 
         } catch (IOException e) {
             throw new IPFSStoreException(e);
@@ -291,23 +286,16 @@ public class IPFSStore {
      *
      * @param indexName Index name
      * @param id        Index document Unique identifier
-     * @return Content (metadata + payload)
+     * @return Content byte array
      * @throws IPFSStoreException
      */
-    public MetadataAndPayload getById(String indexName, String id) throws IPFSStoreException {
+    public byte[] getById(String indexName, String id) throws IPFSStoreException {
         Metadata metadata = this.getMetadataById(indexName, id);
-
         if (metadata != null) {
-            return MetadataAndPayload.builder()
-                    .metadata(metadata)
-                    .payload(this.get(indexName, metadata.getHash()))
-                    .build();
+            return this.get(indexName, metadata.getHash());
 
         } else {
-            return MetadataAndPayload.builder()
-                    .metadata(metadata)
-                    .payload(new byte[0])
-                    .build();
+            return new byte[0];
         }
     }
 
@@ -411,10 +399,10 @@ public class IPFSStore {
      * Search all content with default pagination and returns a content list page
      *
      * @param indexName Index name
-     * @return Page of content (metadata + payload)
+     * @return Page of content (byte arraY)
      * @throws IPFSStoreException
      */
-    public Page<MetadataAndPayload> searchAndFetch(String indexName) throws IPFSStoreException {
+    public Page<byte[]> searchAndFetch(String indexName) throws IPFSStoreException {
         return this.searchAndFetch(indexName, null);
     }
 
@@ -423,10 +411,10 @@ public class IPFSStore {
      *
      * @param indexName Index name
      * @param query     Query with search criteria
-     * @return Page of content (metadata + payload)
+     * @return Page of content (byte array)
      * @throws IPFSStoreException
      */
-    public Page<MetadataAndPayload> searchAndFetch(String indexName, Query query) throws IPFSStoreException {
+    public Page<byte[]> searchAndFetch(String indexName, Query query) throws IPFSStoreException {
         return this.searchAndFetch(indexName, query, null);
     }
 
@@ -436,20 +424,16 @@ public class IPFSStore {
      * @param indexName Index name
      * @param query     Query with search criteria
      * @param pageable  Pagination and Sorting
-     * @return Page of content (metadata + payload)
+     * @return Page of content (byte array)
      * @throws IPFSStoreException
      */
-    public Page<MetadataAndPayload> searchAndFetch(String indexName, Query query, Pageable pageable)
+    public Page<byte[]> searchAndFetch(String indexName, Query query, Pageable pageable)
             throws IPFSStoreException {
         Page<Metadata> search = this.wrapper.search(indexName, query, pageable);
 
-        List<MetadataAndPayload> contentList = search.getContent().stream().map(m -> {
+        List<byte[]> contentList = search.getContent().stream().map(m -> {
             try {
-                return MetadataAndPayload.builder()
-                        .metadata(m)
-                        .payload(this.get(indexName, m.getHash()))
-                        .build();
-                
+                return this.get(indexName, m.getHash());
             } catch (IPFSStoreException e) {
                 LOGGER.error("Error while fetching " + m.getHash(), e);
                 return null;
@@ -466,10 +450,10 @@ public class IPFSStore {
      * @param query     Query with search criteria
      * @param pageNo    Page no
      * @param pageSize  Page size
-     * @return Page of content (metadata + payload)
+     * @return Page of content (byte array)
      * @throws IPFSStoreException
      */
-    public Page<MetadataAndPayload> searchAndFetch(String indexName, Query query, int pageNo, int pageSize)
+    public Page<byte[]> searchAndFetch(String indexName, Query query, int pageNo, int pageSize)
             throws IPFSStoreException {
         return this.searchAndFetch(indexName, query, pageNo, pageSize, null, null);
     }
@@ -483,10 +467,10 @@ public class IPFSStore {
      * @param pageSize      Page size
      * @param sortAttribute Sorting attribute
      * @param sortDirection Sorting direction
-     * @return Page of content (metadata + payload)
+     * @return Page of content (byte array)
      * @throws IPFSStoreException
      */
-    public Page<MetadataAndPayload> searchAndFetch(String indexName, Query query, int pageNo, int pageSize, String sortAttribute,
+    public Page<byte[]> searchAndFetch(String indexName, Query query, int pageNo, int pageSize, String sortAttribute,
                                        Direction sortDirection) throws IPFSStoreException {
 
         PageRequest pagination;

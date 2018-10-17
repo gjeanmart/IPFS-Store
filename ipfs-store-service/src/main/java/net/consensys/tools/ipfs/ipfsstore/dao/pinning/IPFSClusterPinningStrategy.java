@@ -31,7 +31,7 @@ public class IPFSClusterPinningStrategy implements PinningStrategy {
     }
 
     @Override
-    public void pin(String hash) {
+    public void pin(String hash) throws TechnicalException {
         log.debug("pin file in IPFS-cluster  [hash={}]", hash);
 
         // Validation
@@ -53,7 +53,7 @@ public class IPFSClusterPinningStrategy implements PinningStrategy {
     }
 
     @Override
-    public void unpin(String hash) {
+    public void unpin(String hash) throws TechnicalException {
         log.debug("unpin file in IPFS-cluster [hash={}]", hash);
 
         // Validation
@@ -61,7 +61,7 @@ public class IPFSClusterPinningStrategy implements PinningStrategy {
             throw new IllegalArgumentException("hash " + ERROR_NOT_NULL_OR_EMPTY);
 
         try {
-            // TODO implement ipfs-cluster unpin
+            // TODO
 
             log.debug("File unpinned in IPFS-cluster [hash={}]", hash);
 
